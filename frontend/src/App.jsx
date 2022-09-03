@@ -201,7 +201,7 @@ class TitleList extends Component {
           </h1>
           <div className="TitleList__slider">
             {!!cost &&
-              <Cart cost={cost} titles={titles} />
+              <Cart titles={titles} />
             }
             {this.renderList() || <Loader />}
           </div>
@@ -250,7 +250,7 @@ const CartIcon = () => {
 }
 
 
-const Cart = ({ cost, titles }) => {
+const Cart = ({ titles }) => {
   return (
     <div className="Cart">
       <div className="Cart__container">
@@ -268,7 +268,7 @@ const Cart = ({ cost, titles }) => {
         </div>
         <div className="Cart__total">
           <div className="Cart__total-title">Total due:</div>
-          <div className="Cart__total-price">${cost}</div>
+          <div className="Cart__total-price">$0.00</div>
         </div>
       </div>
     </div>
