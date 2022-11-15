@@ -3,6 +3,8 @@ icon: https://apps.okteto.com/movies/icon.png
 deploy:
   - name: Build Images
     command: | 
+      echo "bulding frontend, catalog, and rent in parallel"
+      
       okteto build -t okteto.dev/frontend:${OKTETO_GIT_COMMIT:-latest} frontend > frontend.log &
       B1=$!
       
@@ -25,6 +27,8 @@ deploy:
       cat rent.log
       echo ""
 
+      echo "bulding api and worker"
+
       okteto build -t okteto.dev/api:${OKTETO_GIT_COMMIT:-latest} api > api.log &
       B4=$!
       okteto build -t okteto.dev/worker:${OKTETO_GIT_COMMIT:-latest} worker > worker.log &
@@ -42,6 +46,8 @@ deploy:
 
   - name: Build dev images
     command: |
+      echo "bulding dev images in parallel"
+      
       okteto build -t okteto.dev/frontend-dev:${OKTETO_GIT_COMMIT:-latest} --target dev frontend > frontend-dev.log &
       B1=$!
       okteto build -t okteto.dev/workder-dev:${OKTETO_GIT_COMMIT:-latest} worker > worker-dev.log &
