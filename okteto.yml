@@ -1,27 +1,67 @@
 icon: https://apps.okteto.com/movies/icon.png
 
-build:
-  frontend:
-    context: frontend
-  frontend-dev:
-    context: frontend
-    target: dev
-  catalog:
-    context: catalog
-  rent:
-    context: rent
-  api:
-    context: api
-  api-dev:
-    context: api
-    target: dev
-  worker:
-    context: worker
-  worker-dev:
-    context: worker
-    target: dev
-
 deploy:
+  - name: Build Images
+    command: | 
+      okteto build -t okteto.dev/frontend:${OKTETO_GIT_COMMIT:-latest} frontend > frontend.log &
+      B1=$!
+      
+      okteto build -t okteto.dev/catalog:${OKTETO_GIT_COMMIT:-latest} catalog > catalog.log &
+      B2=$!
+      
+      okteto build -t okteto.dev/rent:${OKTETO_GIT_COMMIT:-latest} rent > rent.log &
+      B3=$!
+      
+      wait $B1 $B2 $B3
+      echo "okteto.dev/frontend"
+      cat frontend.log
+      echo ""
+
+      echo "okteto.dev/catalog"
+      cat catalog.log
+      echo ""
+
+      echo "okteto.dev/rent"
+      cat rent.log
+      echo ""
+
+      okteto build -t okteto.dev/api:${OKTETO_GIT_COMMIT:-latest} api > api.log &
+      B4=$!
+      okteto build -t okteto.dev/worker:${OKTETO_GIT_COMMIT:-latest} worker > worker.log &
+      B5=$!
+
+      wait $B4 $B5
+
+      echo "okteto.dev/api"
+      cat api.log
+      echo ""
+
+      echo "okteto.dev/worker"
+      cat worker.log
+      echo ""
+
+  - name: Build dev images
+    command: |
+      okteto build -t okteto.dev/frontend-dev:${OKTETO_GIT_COMMIT:-latest} --target dev frontend > frontend-dev.log &
+      B1=$!
+      okteto build -t okteto.dev/workder-dev:${OKTETO_GIT_COMMIT:-latest} worker > worker-dev.log &
+      B2=$!
+      okteto build -t okteto.dev/api-dev:${OKTETO_GIT_COMMIT:-latest} --target dev api > api-dev.log &
+      B3=$!
+
+      wait $B1 $B2 $B3
+      echo "okteto.dev/frontend-dev"
+      cat frontend-dev.log
+      echo ""
+
+      echo "okteto.dev/worker-dev"
+      cat worker-dev.log
+      echo ""
+
+      echo "okteto.dev/api-dev"
+      cat api-dev.log
+      echo ""
+
   - name: Deploy PostgreSQL
     command: helm upgrade --install postgresql postgresql/postgresql-11.6.21.tgz -f postgresql/values.yml --version 11.6.21
   - name: Deploy Kafka
@@ -29,19 +69,19 @@ deploy:
   - name: Deploy MongoDB
     command:  helm upgrade --install mongodb mongodb/mongodb-12.1.30.tgz -f mongodb/values.yml --version 12.1.30
   - name: Deploy Frontend
-    command: helm upgrade --install frontend frontend/chart --set image=${OKTETO_BUILD_FRONTEND_IMAGE}
+    command: helm upgrade --install frontend frontend/chart --set image=okteto.dev/frontend:${OKTETO_GIT_COMMIT:-latest}
   - name: Deploy Catalog
-    command: helm upgrade --install catalog catalog/chart --set image=${OKTETO_BUILD_CATALOG_IMAGE}
+    command: helm upgrade --install catalog catalog/chart --set image=okteto.dev/catalog:${OKTETO_GIT_COMMIT:-latest}
   - name: Deploy Rent
-    command: helm upgrade --install rent rent/chart --set image=${OKTETO_BUILD_RENT_IMAGE}
+    command: helm upgrade --install rent rent/chart --set image=okteto.dev/rent:${OKTETO_GIT_COMMIT:-latest}
   - name: Deploy Worker
-    command: helm upgrade --install worker worker/chart --set image=${OKTETO_BUILD_WORKER_IMAGE}
+    command: helm upgrade --install worker worker/chart --set image=okteto.dev/worker:${OKTETO_GIT_COMMIT:-latest}
   - name: Deploy API
-    command: helm upgrade --install api api/chart --set image=${OKTETO_BUILD_API_IMAGE} --set load=${API_LOAD_DATA:-true}
+    command: helm upgrade --install api api/chart --set image=okteto.dev/api:${OKTETO_GIT_COMMIT:-latest} --set load=${API_LOAD_DATA:-true}
 
 dev:
   frontend:
-    image: ${OKTETO_BUILD_FRONTEND_DEV_IMAGE}
+    image: okteto.dev/frontend-dev:${OKTETO_GIT_COMMIT:-latest}
     command: bash
     sync:
       - frontend:/usr/src/app
@@ -60,7 +100,7 @@ dev:
     forward:
       - 5005:5005
   api:
-    image: ${OKTETO_BUILD_API_DEV_IMAGE}
+    image: okteto.dev/api-dev:664f38fab58416b90adac9b91c6e4f2819e099db
     command: bash
     securityContext:
       capabilities:
@@ -71,7 +111,7 @@ dev:
     forward:
       - 2346:2345
   worker:
-    image: ${OKTETO_BUILD_WORKER_DEV_IMAGE}
+    image: okteto.dev/worker-dev:${OKTETO_GIT_COMMIT:-latest}
     command: bash
     securityContext:
       capabilities:
